@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Space Explorer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            color: white;
+            background: black;
+            height: 400vh;
+        }
+
+        canvas#bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .nav-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff6347;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-btn {
+            background: rgba(255, 99, 71, 0.1);
+            border: 1px solid #ff6347;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: #ff6347;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 99, 71, 0.3);
+        }
+
+        .overlay {
+            position: relative;
+            padding: 6rem 2rem 2rem;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .content {
+            margin-top: 10vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: linear-gradient(45deg, #ff6347, #4a90e2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            font-size: 1.25rem;
+            margin-top: 0.5rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .section {
+            margin: 30vh 0;
+            padding: 2rem;
+            background: rgba(0,0,0,0.8);
+            border-radius: 15px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid rgba(255, 99, 71, 0.2);
+        }
+
+        .nasa-panel {
+            display: none;
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 400px;
+            max-height: 80vh;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid #ff6347;
+            border-radius: 15px;
+            padding: 1.5rem;
+            z-index: 999;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .nasa-panel.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 99, 71, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ff6347;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #ff6347;
+        }
+
+        .spinner {
+            border: 2px solid rgba(255, 99, 71, 0.1);
+            border-left: 2px solid #ff6347;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .apod-image {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .mars-photo {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .neo-item {
+            background: rgba(255, 99, 71, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #ff6347;
+        }
+
+        .date-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ff6347;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .error {
+            color: #ff4444;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .nasa-panel {
+                width: 90vw;
+                right: 5vw;
+                max-height: 70vh;
+            }
+            
+            .nav-buttons {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .nav-btn {
+                font-size: 0.8rem;
+                padding: 0.4rem 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg"></canvas>
+    
+    <!-- Navigation Menu -->
+    <nav class="nav-menu">
+        <div class="logo">🚀 NASA Explorer</div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="showPanel('apod')">Picture of the Day</button>
+            <button class="nav-btn" onclick="showPanel('mars')">Mars Rover</button>
+            <button class="nav-btn" onclick="showPanel('neo')">Near Earth Objects</button>
+            <button class="nav-btn" onclick="showPanel('epic')">Earth Images</button>
+        </div>
+    </nav>
+
+    <!-- NASA Data Panels -->
+    <div id="apod-panel" class="nasa-panel">
+        <div class="panel-header">
+            <h3>🌟 Astronomy Picture of the Day</h3>
+            <button class="close-btn" onclick="closePanel()">&times;</button>
+        </div>
+        <input type="date" id="apod-date" class="date-input" onchange="fetchAPOD()">
+        <div id="apod-content"></div>
+    </div>
+
+    <div id="mars-panel" class="nasa-panel">
+        <div class="panel-header">
+            <h3>🔴 Mars Rover Photos</h3>
+            <button class="close-btn" onclick="closePanel()">&times;</button>
+        </div>
+        <select id="rover-select" class="date-input" onchange="fetchMarsPhotos()">
+            <option value="curiosity">Curiosity</option>
+            <option value="opportunity">Opportunity</option>
+            <option value="spirit">Spirit</option>
+        </select>
+        <div id="mars-content"></div>
+    </div>
+
+    <div id="neo-panel" class="nasa-panel">
+        <div class="panel-header">
+            <h3>☄️ Near Earth Objects</h3>
+            <button class="close-btn" onclick="closePanel()">&times;</button>
+        </div>
+        <input type="date" id="neo-date" class="date-input" onchange="fetchNEO()">
+        <div id="neo-content"></div>
+    </div>
+
+    <div id="epic-panel" class="nasa-panel">
+        <div class="panel-header">
+            <h3>🌍 Earth Polychromatic Images</h3>
+            <button class="close-btn" onclick="closePanel()">&times;</button>
+        </div>
+        <div id="epic-content"></div>
+    </div>
+    
+    <div class="overlay">
+        <h1>NASA Space Explorer</h1>
+        <p>Scroll to explore space and use the menu to discover real NASA data!</p>
+    </div>
+
+    <div class="content">
+        <div class="section">
+            <h2>Journey Through Space</h2>
+            <p>Experience the wonders of our solar system as you scroll through this immersive 3D space environment. Use the navigation menu above to explore real NASA data including daily astronomy pictures, Mars rover photos, and near-Earth objects.</p>
+        </div>
+
+        <div class="section">
+            <h2>Explore the Cosmos</h2>
+            <p>Watch as planets rotate and the camera moves through the starfield, creating a dynamic space exploration experience. Each celestial body is carefully crafted to represent the diversity of our solar system.</p>
+        </div>
+
+        <div class="section">
+            <h2>Interactive 3D Scene</h2>
+            <p>This scene features Earth, the Moon, diverse planets, asteroids, and a mesmerizing spiral galaxy, all rendered in real-time 3D graphics. The scene responds to your scrolling for an immersive journey through space.</p>
+        </div>
+
+        <div class="section">
+            <h2>NASA API Integration</h2>
+            <p>Discover real space data through NASA's APIs. View stunning astronomy pictures, explore Mars through rover cameras, track near-Earth objects, and see Earth from space with the EPIC camera.</p>
+        </div>
+    </div>
+
+    <script>
+        // Your existing Three.js code
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.setZ(30);
+        camera.position.setX(-3);
+
+        const canvas = document.getElementById('bg');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Background
+        const textureLoader = new THREE.TextureLoader();
+        scene.background = textureLoader.load('/space.jpg');
+
+        // Create a starfield background
+        const starGeometry = new THREE.BufferGeometry();
+        const starVertices = [];
+
+        for (let i = 0; i < 10000; i++) {
+            const x = (Math.random() - 0.5) * 2000;
+            const y = (Math.random() - 0.5) * 2000;
+            const z = (Math.random() - 0.5) * 2000;
+            starVertices.push(x, y, z);
+        }
+
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const stars = new THREE.Points(
+            starGeometry,
+            new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 })
+        );
+        scene.add(stars);
+
+        // Create additional galaxy particles
+        const galaxyGeometry = new THREE.BufferGeometry();
+        const galaxyVertices = [];
+        const galaxyColors = [];
+
+        for (let i = 0; i < 15000; i++) {
+            const radius = Math.random() * 500 + 100;
+            const spinAngle = radius * 0.01;
+            const branchAngle = (i % 3) * Math.PI * 2 / 3;
+            
+            const x = Math.cos(branchAngle + spinAngle) * radius + (Math.random() - 0.5) * 50;
+            const y = (Math.random() - 0.5) * 100;
+            const z = Math.sin(branchAngle + spinAngle) * radius + (Math.random() - 0.5) * 50;
+            
+            galaxyVertices.push(x, y, z);
+            
+            const mixedColor = new THREE.Color();
+            const innerColor = new THREE.Color('#ff6030');
+            const outerColor = new THREE.Color('#1b3984');
+            mixedColor.lerpColors(innerColor, outerColor, radius / 600);
+            
+            galaxyColors.push(mixedColor.r, mixedColor.g, mixedColor.b);
+        }
+
+        galaxyGeometry.setAttribute('position', new THREE.Float32BufferAttribute(galaxyVertices, 3));
+        galaxyGeometry.setAttribute('color', new THREE.Float32BufferAttribute(galaxyColors, 3));
+        
+        const galaxy = new THREE.Points(
+            galaxyGeometry,
+            new THREE.PointsMaterial({ 
+                size: 1.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            })
+        );
+        galaxy.position.set(200, 0, -300);
+        scene.add(galaxy);
+
+        /* Torus
+        const torus = new THREE.Mesh(
+            new THREE.TorusGeometry(10, 3, 16, 100),
+            new THREE.MeshStandardMaterial({ color: 0xff6347 })
+        );
+        scene.add(torus);
+         */
+          
+        // Lights
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(5, 5, 5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(pointLight, ambientLight);
+
+        // Earth
+        const earthGeometry = new THREE.SphereGeometry(3, 32, 32);
+        const earthMaterial = new THREE.MeshStandardMaterial({
+            map: textureLoader.load('/earth.jpg'),
+            normalMap: textureLoader.load('/earth_texture.jpg'),
+        });
+        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+        earth.position.set(2, 0, -5);
+        scene.add(earth);
+
+        // Moon
+        const moonGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+        const moonMaterial = new THREE.MeshStandardMaterial({
+            map: textureLoader.load('/moon.jpg'),
+            normalMap: textureLoader.load('/normal.jpg'),
+        });
+        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        moon.position.set(-10, 0, 30);
+        scene.add(moon);
+
+        // Add more diverse planets
+        const planets = [];
+        const planetData = [
+            { size: 4, color: 0xffc649, position: [50, 20, -80], rings: true },
+            { size: 2.5, color: 0xff4500, position: [-60, -30, -100] },
+            { size: 6, color: 0x4169e1, position: [80, -40, -150] },
+            { size: 3, color: 0x8fbc8f, position: [-40, 50, -120] },
+            { size: 1.8, color: 0x696969, position: [30, -60, -90] },
+            { size: 5.5, color: 0xdaa520, position: [-80, 30, -200] },
+            { size: 2.2, color: 0x9370db, position: [60, 40, -180] },
+            { size: 3.8, color: 0x20b2aa, position: [-30, -50, -160] },
+        ];
+
+        planetData.forEach((data, index) => {
+            const planetGeometry = new THREE.SphereGeometry(data.size, 32, 32);
+            const planetMaterial = new THREE.MeshStandardMaterial({ 
+                color: data.color,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            planet.position.set(...data.position);
+            
+            if (data.rings) {
+                const ringGeometry = new THREE.RingGeometry(data.size * 1.3, data.size * 2, 32);
+                const ringMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xaaaaaa,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const rings = new THREE.Mesh(ringGeometry, ringMaterial);
+                rings.rotation.x = Math.PI / 2;
+                planet.add(rings);
+            }
+            
+            planets.push(planet);
+            scene.add(planet);
+        });
+
+        // Add asteroids
+        const asteroids = [];
+        for (let i = 0; i < 20; i++) {
+            const asteroidGeometry = new THREE.DodecahedronGeometry(Math.random() * 0.8 + 0.2, 0);
+            const asteroidMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x8b7355,
+                roughness: 1.0,
+                metalness: 0.0
+            });
+            const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+            asteroid.position.set(
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 200
+            );
+            asteroids.push(asteroid);
+            scene.add(asteroid);
+        }
+
+        // Scroll Animation
+        function moveCamera() {
+            const t = document.body.getBoundingClientRect().top;
+            
+            moon.rotation.x += 0.05;
+            moon.rotation.y += 0.075;
+            moon.rotation.z += 0.05;
+            
+            earth.rotation.y += 0.01;
+            earth.rotation.z += 0.01;
+            
+            camera.position.z = t * -0.01;
+            camera.position.x = t * -0.0002;
+            camera.rotation.y = t * -0.0002;
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            //torus.rotation.x += 0.01;
+            //torus.rotation.y += 0.005;
+            //torus.rotation.z += 0.01;
+
+            planets.forEach((planet, index) => {
+                planet.rotation.x += 0.005 * (index + 1);
+                planet.rotation.y += 0.01 * (index + 1);
+            });
+
+            asteroids.forEach((asteroid, index) => {
+                asteroid.rotation.x += 0.02 * (index % 3 + 1);
+                asteroid.rotation.y += 0.015 * (index % 2 + 1);
+                asteroid.rotation.z += 0.01 * (index % 4 + 1);
+            });
+
+            moon.rotation.x += 0.005;
+            earth.rotation.y += 0.003;
+            galaxy.rotation.y += 0.001;
+
+            renderer.render(scene, camera);
+        }
+
+        // NASA API Functions
+        const API_BASE = 'http://localhost:5000/api'; // Update with your backend URL
+
+        let currentPanel = null;
+
+        function showPanel(panelType) {
+            closePanel();
+            currentPanel = panelType;
+            
+            // Update active button
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const panel = document.getElementById(`${panelType}-panel`);
+            panel.classList.add('active');
+            
+            // Initialize data for the panel
+            switch(panelType) {
+                case 'apod':
+                    initAPOD();
+                    break;
+                case 'mars':
+                    fetchMarsPhotos();
+                    break;
+                case 'neo':
+                    initNEO();
+                    break;
+                case 'epic':
+                    fetchEPIC();
+                    break;
+            }
+        }
+
+        function closePanel() {
+            document.querySelectorAll('.nasa-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            currentPanel = null;
+        }
+
+        function showLoading(contentId) {
+            document.getElementById(contentId).innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading NASA data...</p>
+                </div>
+            `;
+        }
+
+        function showError(contentId, message) {
+            document.getElementById(contentId).innerHTML = `
+                <div class="error">
+                    <p>Error: ${message}</p>
+                </div>
+            `;
+        }
+
+        // APOD Functions
+        function initAPOD() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('apod-date').value = today;
+            fetchAPOD();
+        }
+
+        async function fetchAPOD() {
+            showLoading('apod-content');
+            const date = document.getElementById('apod-date').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/apod?date=${date}`);
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || 'Failed to fetch APOD');
+                
+                document.getElementById('apod-content').innerHTML = `
+                    <h4>${data.title}</h4>
+                    ${data.media_type === 'image' ? 
+                        `<img src="${data.url}" alt="${data.title}" class="apod-image">` :
+                        `<iframe src="${data.url}" width="100%" height="200"></iframe>`
+                    }
+                    <p><strong>Date:</strong> ${data.date}</p>
+                    <p>${data.explanation}</p>
+                    ${data.copyright ? `<p><strong>Copyright:</strong> ${data.copyright}</p>` : ''}
+                `;
+            } catch (error) {
+                showError('apod-content', error.message);
+            }
+        }
+
+        // Mars Rover Functions
+        async function fetchMarsPhotos() {
+            showLoading('mars-content');
+            const rover = document.getElementById('rover-select').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/mars-photos?rover=${rover}&sol=1000`);
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || 'Failed to fetch Mars photos');
+                
+                if (data.photos.length === 0) {
+                    document.getElementById('mars-content').innerHTML = '<p>No photos available for this sol.</p>';
+                    return;
+                }
+                
+                const photosHtml = data.photos.slice(0, 6).map(photo => `
+                    <img src="${photo.img_src}" alt="Mars photo by ${photo.rover.name}" class="mars-photo">
+                `).join('');
+                
+                document.getElementById('mars-content').innerHTML = `
+                    <h4>${data.photos[0].rover.name} Rover Photos</h4>
+                    <p><strong>Sol:</strong> 1000 | <strong>Earth Date:</strong> ${data.photos[0].earth_date}</p>
+                    <div class="photo-grid">${photosHtml}</div>
+                `;
+            } catch (error) {
+                showError('mars-content', error.message);
+            }
+        }
+
+        // NEO Functions
+        function initNEO() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('neo-date').value = today;
+            fetchNEO();
+        }
+
+        async function fetchNEO() {
+            showLoading('neo-content');
+            const date = document.getElementById('neo-date').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/neo?start_date=${date}&end_date=${date}`);
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || 'Failed to fetch NEO data');
+                
+                const asteroids = data.near_earth_objects[date] || [];
+                
+                if (asteroids.length === 0) {
+                    document.getElementById('neo-content').innerHTML = '<p>No near-Earth objects found for this date.</p>';
+                    return;
+                }
+                
+                const asteroidsHtml = asteroids.slice(0, 5).map(asteroid => `
+                    <div class="neo-item">
+                        <h5>${asteroid.name}</h5>
+                        <p><strong>Diameter:</strong> ${Math.round(asteroid.estimated_diameter.meters.estimated_diameter_min)} - ${Math.round(asteroid.estimated_diameter.meters.estimated_diameter_max)} meters</p>
+                        <p><strong>Potentially Hazardous:</strong> ${asteroid.is_potentially_hazardous_asteroid ? 'Yes' : 'No'}</p>
+                        <p><strong>Closest Approach:</strong> ${Math.round(parseFloat(asteroid.close_approach_data[0].miss_distance.kilometers))} km</p>
+                    </div>
+                `).join('');
+                
+                document.getElementById('neo-content').innerHTML = `
+                    <h4>Near Earth Objects - ${date}</h4>
+                    <p>Found ${asteroids.length} objects</p>
+                    ${asteroidsHtml}
+                `;
+            } catch (error) {
+                showError('neo-content', error.message);
+            }
+        }
+
+        // EPIC Functions
+        async function fetchEPIC() {
+            showLoading('epic-content');
+            
+            try {
+                const response = await fetch(`${API_BASE}/epic`);
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.error || 'Failed to fetch EPIC data');
+                
+                if (data.length === 0) {
+                    document.getElementById('epic-content').innerHTML = '<p>No EPIC images available.</p>';
+                    return;
+                }
+                
+                const latestImage = data[0];
+                const date = latestImage.date.split(' ')[0].split('-').join('/');
+                const imageUrl = `https://epic.gsfc.nasa.gov/archive/natural/${date.split('/').join('/')}/png/${latestImage.image}.png`;
+                
+                document.getElementById('epic-content').innerHTML = `
+                    <h4>Earth Polychromatic Image</h4>
+                    <img src="${imageUrl}" alt="Earth from EPIC" class="apod-image">
+                    <p><strong>Date:</strong> ${latestImage.date}</p>
+                    <p><strong>Caption:</strong> ${latestImage.caption}</p>
+                    <p><strong>Coordinates:</strong> Lat: ${latestImage.centroid_coordinates.lat}°, Lon: ${latestImage.centroid_coordinates.lon}°</p>
+                `;
+            } catch (error) {
+                showError('epic-content', error.message);
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('scroll', moveCamera);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (currentPanel && !e.target.closest('.nasa-panel') && !e.target.closest('.nav-btn')) {
+                closePanel();
+            }
+        });
+
+        // Start animation
+        moveCamera();
+        animate();
+    </script>
+</body>
+</html>
