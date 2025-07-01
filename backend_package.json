@@ -4,8 +4,12 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "scripts": {
-    "start": "node backend/index.js"
+   "scripts": {
+    "start": "bun run backend/index.js",
+    "dev": "bun run backend/index.js"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
   },
   "dependencies": {
     "express": "^4.18.0",
@@ -14,3 +18,4 @@
     "dotenv": "^16.0.0"
   }
 }
+
