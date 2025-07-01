@@ -1,6 +1,6 @@
 // backend/index.js 
 https://github.com/Sal68190/BI_NASA/tree/main/backend
-const express = require('express');
+import express from 'express';
 const axios = require('axios');
 const cors = require('cors');
 require('dotenv').config();
